@@ -1,0 +1,108 @@
+<html style="font-size: 10px;">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Scanner</title>
+    <script src="./jsQR.js"></script>
+    <script type="text/javascript" src="./qrcode.js"></script>
+</head>
+
+<body>
+    <canvas id="canvas" width="640" height="480"></canvas>
+    <video id="video" autoplay></video>
+
+</body>
+
+</html>
+
+<script type="text/javascript">
+    // 扫码结果回调
+    qrcode.callback = (res) => {
+        console.log(res);
+    }
+
+    // getUserMedia状态
+    var mediaStatus = false;
+
+    // 画布对象
+    const canvas = document.getElementById("canvas").getContext('2d');
+
+    // 视频对象
+    const video = document.getElementById("video");
+
+    // 视频当前帧数据流对象
+    var imageData = null;
+
+    // alert(navigator.mediaDevices);
+
+    // 不同getUserMedia处理
+    if (navigator.getUserMedia) {
+        // 移动设备打开后置摄像头【 facingMode: "environment"】 
+        navigator.getUserMedia({ video: { facingMode: "environment" } }, success, error);
+    } else if (navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
+            .then(success)
+            .catch(error);
+    } else if (navigator.webkitGetUserMedia) {
+        webkit = true;
+        navigator.webkitGetUserMedia({ video: { facingMode: "environment" } }, success, error);
+    } else if (navigator.mozGetUserMedia) {
+        moz = true;
+        navigator.mozGetUserMedia({ video: { facingMode: "environment" } }, success, error);
+    }
+    // getUserMedia调用成功
+    function success(stream) {
+        // video = document.getElementById("video");
+        try {
+            video.srcObject = stream;
+        } catch {
+            //这里是兼容写法
+            let compatibleURL = window.URL || window.webkitURL;
+            video.src = compatibleURL.createObjectURL(stream);
+        }
+        mediaStatus = true;
+        setTimeout(captureToCanvas, 500);
+    }
+    // getUserMedia调用失败
+    function error(error) {
+        mediaStatus = false;
+        return;
+    }
+
+    //将视频流放到画布
+    function captureToCanvas() {
+        if (mediaStatus) {
+            canvas.drawImage(video, 0, 0);
+
+            setTimeout(captureToCanvas, 500);
+
+            imageData = canvas.getImageData(0, 0, 600, 800);
+
+            const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: "dontInvert",
+            });
+
+
+            if (code) {
+                console.log(code);
+            }
+        }
+    }
+</script>
+
+<style>
+    body{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #canvas {
+        position: absolute;
+        opacity: 0;
+    }
+
+    #video {
+        border-radius: 5rem;
+    }
+</style>
